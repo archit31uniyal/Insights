@@ -1,20 +1,36 @@
-{% extends 'base.html' %} {% block content %}
-<div id="home-container">
-  <h1 id="home-header" align="center">Yummy San 💬</h1>
-  {% if error %}
-  <p id="error">{{error}}</p>
-  {% endif %}
-  <form method="post" id="chat-widget-home">
-    <div id="name-input" align="center">
-      <label for="url">URL</label>
-      <input type="text" id="url" name="url" placeholder="Enter URL" value="{{url}}" />
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Review analyzer</title>
+  </head>
+  <body>
+    {% block content %}
+    
+    <h1> Yummy San </h1>
+
+    <form action="/" method="post">
+      <label for="textbox">Enter URL:</label> <br/>
+      <textarea id="url" name="url" rows="3" cols="100"></textarea> <br/> <br/>
+      
+      <label for="textbox">Enter your question:</label> <br/>
+      <textarea id="textbox" name="textbox" rows="6" cols="100"></textarea> <br/> <br/>
+      <input type="submit" value="Submit">
+    </form>
+
+    {% if submitted_text %}
+    <p>Your question is {{ submitted_text }}</p>
+    <p>Answer: {{message}} </p>
+    
+    {% endif %}
+
+    <div id="history">
+      {% for question, answer in message %}
+        <p>Q: {{ question }}</p>
+        <p>A: {{ answer }}</p>
+      {% endfor %}
     </div>
-    <div align="">
-      <label for="query" id="code-label">Query</label>
-      <input type="text" id="query" name="query" placeholder="Enter query" value="{{query}}" />
-      <button type="submit" id="submit" name="submit">Submit</button> 
-      <!-- TODO: Create a submit buton like ChatGPT -->
-    </div>
-  </form>
-</div>
-{% endblock %}
+    
+    {% endblock %}
+  </body>
+</html>
