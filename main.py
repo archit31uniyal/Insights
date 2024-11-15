@@ -61,7 +61,6 @@ def get_response(reviews, question):
   question_class = sentiment["choices"][0]["message"]["content"]
   question_class = question_class.strip().lower()
 
-  revs = []
   ratings = np.array(reviews.rating)
   if sentiment_map[question_class]: 
       indices = np.where(ratings > 4.0)[0]
@@ -72,6 +71,7 @@ def get_response(reviews, question):
   text = reviews.text
 
   text = [t for i, t in enumerate(text) if i in indices]
+  # TODO: Make review fetch adaptive to windows size and question asked
   text = text[:7]
 
   text = ' '.join(text)
@@ -85,7 +85,6 @@ def get_response(reviews, question):
           }
       ]
   )
-  print(response)
   # response = openai.ChatCompletion.create(
   #   model="gpt-3.5-turbo",
   #   messages=[
