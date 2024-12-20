@@ -2,6 +2,8 @@ from flask import Flask, render_template, request
 from llama_cpp import Llama
 import numpy as np
 from utils import *
+from transformers import AutoModelForSequenceClassification, pipeline
+import os
 
 app = Flask(__name__)
 history = []
@@ -35,86 +37,109 @@ def app_response():
     # return render_template("home.html", message=history)
     return answer
 
-def get_response(reviews, question):
+def summarize_in_batches(text, llm, q_len, batch_size= 20):
+    curr_pos = 0
+    prev_pos = 0
+    summary = []
+    for i in range(batch_size):
+        count = 0
+        for j, t in enumerate(text[prev_pos:]):
+            count += len(t.split())
+            if count <= 500:
+                curr_pos = j
+            else:
+                curr_pos += 1 
+                break
+        revs = ' '.join(text[prev_pos: curr_pos])
+        response = llm.create_chat_completion(
+            messages = [
+                {"role": "system", "content": "You are an assistant who perfectly answers questions based on the reviews provided."},
+                {
+                    "role": "user",
+                    "content": f"Context:\n {revs}\n\n Summarize the reviews preserving important information."
+                }
+            ]
+        )
+        prev_pos = curr_pos
+        summary.append(response["choices"][0]["message"]["content"])
+    
+    response = llm.create_chat_completion(
+            messages = [
+                {"role": "system", "content": "You are an assistant who perfectly answers questions based on the reviews provided."},
+                {
+                    "role": "user",
+                    "content": f"Here's a list of reviews:\n {summary}\n\n Summarize the reviews preserving important information in {512 - q_len} words."
+                }
+            ]
+        )
+    
+    return response["choices"][0]["message"]["content"]
 
-  sentiment_map = {
+def get_response(reviews, question):
+    q_len = len(question.split())
+    sentiment_map = {
     "positive": 1,
     "negative": 0
-  }
+    }
 
-  llm = Llama.from_pretrained(
-      repo_id = "TheBloke/Llama-2-7B-Chat-GGUF",
-      filename = "*Q4_K_M.gguf",
-      chat_format="llama-2"
-  )
+    # sentiment_llm = AutoModelForSequenceClassification.from_pretrained("gilf/english-yelp-sentiment")
+    sentiment_llm = pipeline("text-classification")
 
-  sentiment = llm.create_chat_completion(
-      messages = [
-          {"role": "system", "content": "You are an assistant who perfectly classifies the sentiment of the question between postive and negative. The answer should be only one word: either positive or negative."},
-          {
-              "role": "user",
-              "content": f"What is the sentiment of the following question: '{question}'"
-          }
-      ]
-  )
+    sentiment = sentiment_llm(question)
+    question_class = sentiment[0]["label"]
+    question_class = question_class.strip().lower()
 
-  question_class = sentiment["choices"][0]["message"]["content"]
-  question_class = question_class.strip().lower()
+    llm = Llama.from_pretrained(
+        repo_id="unsloth/Llama-3.2-3B-Instruct-GGUF",
+	    filename="Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+        n_ctx = 4096,
+        n_gpu_layers=30
+    )
 
-  ratings = np.array(reviews.rating)
-  if sentiment_map[question_class]: 
-      indices = np.where(ratings > 4.0)[0]
-  else:
-      indices = np.where(ratings < 2.0)[0]
 
-  # Insert your environment key 
-  text = reviews.text
+    # sentiment = llm.create_chat_completion(
+    #     messages = [
+    #         {"role": "system", "content": "You are an assistant who perfectly classifies the sentiment of the question between postive and negative. The answer should be only one word: either positive or negative."},
+    #         {
+    #             "role": "user",
+    #             "content": f"What is the sentiment of the following question: '{question}'"
+    #         }
+    #     ]
+    # )
 
-  text = [t for i, t in enumerate(text) if i in indices]
-  # TODO: Make review fetch adaptive to windows size and question asked
-  text = text[:7]
+    # question_class = sentiment["choices"][0]["message"]["content"]
+    # question_class = question_class.strip().lower()
 
-  text = ' '.join(text)
+    ratings = np.array(reviews.rating)
+    if sentiment_map[question_class]: 
+        indices = np.where(ratings > 4.0)[0]
+    else:
+        indices = np.where(ratings < 2.0)[0]
 
-  response = llm.create_chat_completion(
-      messages = [
-          {"role": "system", "content": "You are an assistant who perfectly answers questions based on the reviews provided."},
-          {
-              "role": "user",
-              "content": f"Here's a list of reviews:\n {text} \n\n Based on the reviews above, answer the following question, \n{question}"
-          }
-      ]
-  )
-  # response = openai.ChatCompletion.create(
-  #   model="gpt-3.5-turbo",
-  #   messages=[
-  #     {
-  #       "role": "system",
-  #       "content": "you are a mathematic teacher for kids. You should explain in a way to make a kid understand your answer."
-  #     },
-  #     {
-  #       "role": "user",
-  #       "content": "How do we calculate a modulo? and what is the modulo?"
-  #     },
-  #     {
-  #       "role": "assistant",
-  #       "content": "Ah, I see you're curious about modulos! Well, think of a modulo as a way to find the remainder after dividing two numbers. Let me explain it in a fun way.\n\nImagine you have a box of 12 chocolates and you want to share them equally among you and your two best friends. You start dividing the chocolates, giving each friend 4 chocolates. But what about the remaining chocolates? That's where the modulo comes in!\n\nTo calculate the modulo, you count how many chocolates are left after everyone gets their fair share. In this case, when you divide 12 chocolates among 3 people, each person gets 4 chocolates and there are no leftover chocolates. So, the modulo is 0.\n\nNow, let's try a different example. Suppose you have 10 candies and you want to share them equally among 4 friends. You start dividing, giving each friend 2 candies. But there will be some leftovers this time, right?\n\nTo find the modulo, we count how many candies are left after dividing equally. In this case, after giving each friend 2 candies, you'll have 2 candies left over. So, the modulo is 2.\n\nYou can find the modulo for any division calculation by finding the remainder, or what's"
-  #     },
-  #     {
-  #       "role": "user",
-  #       "content": question
-  #     }
-  #   ],
-  #   temperature=1,
-  #   max_tokens=256,
-  #   top_p=1,
-  #   frequency_penalty=0,
-  #   presence_penalty=0
-  # )
+    # Insert your environment key 
+    text = reviews.text
 
-  processed = response["choices"][0]["message"]["content"]
-  return processed
+    text = [t for i, t in enumerate(text) if i in indices]
+    # TODO: Make review fetch adaptive to windows size and question asked
+    # text = text[:7]
+    if os.path.exists(f"summary_reviews_{question_class}.pkl"):
+        summary = load_pickle(f"summary_reviews_{question_class}.pkl")
+    else:
+        summary = summarize_in_batches(text, llm, q_len)
+        save_pickle(summary, f"summary_reviews_{question_class}.pkl")
 
+    response = llm.create_chat_completion(
+        messages = [
+            {"role": "system", "content": "You are an assistant who perfectly answers questions based on the reviews provided."},
+            {
+                "role": "user",
+                "content": f"Here's a summary of reviews:\n {summary} \n\n Based on the summary above, answer the following question, \n{question}"
+            }
+        ]
+    )
+
+    processed = response["choices"][0]["message"]["content"]
+    return processed
 
 
 if __name__ == "__main__":

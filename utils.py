@@ -2,6 +2,8 @@ import requests
 import re
 from bs4 import BeautifulSoup
 
+import pickle as pkl
+
 class Review:
     def __init__(self, base_url, num_pages= 5, rating= [], date= [], text = []):
         self.base_url = base_url
@@ -34,3 +36,11 @@ class Review:
             else:
                 print('Page not found')
                 continue
+
+def save_pickle(obj, filename):
+    with open(filename, 'wb') as f:
+        pkl.dump(obj, f)
+
+def load_pickle(filename):
+    with open(filename, 'rb') as f:
+        return pkl.load(f)
