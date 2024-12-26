@@ -1,0 +1,105 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0;
+  text-align: center;
+}
+
+.main-heading h1{
+  margin: 0;
+  margin-bottom: 150px;
+  display: inline-block;
+  text-align: center;
+}
+
+.text-input {
+  font-size: 15px;
+  width: 800px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 4px;
+  padding-right: 4px;
+  border-radius: 15px;
+  outline: none;
+  appearance: none;
+  border-color: rgb(150, 150, 150);
+}
+
+.text-input:focus{
+  outline: black;
+}
+
+.submit-button {
+  background-color: white;
+  margin-top: 10px;
+  margin-left: 10px;
+  font-size: 30px;
+  padding: 0;
+}
+
+.submit-button:hover{
+    box-shadow: 2px 2px 5px 2px rgba(96, 96, 96, 0.5);
+}
+
+
+.input-group {
+  display: flex;
+  align-items: center; /* Ensure input and button are vertically aligned */
+}
+
+.logo {
+  width: 90px;
+  height:60px;
+  object-fit: cover;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  will-change: filter;
+  transition: filter 300ms;
+}
+
+.new-chat-button {
+  margin: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #dfdfdf;
+  color: black;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.new-chat-button:hover {
+  background-color: #cecece;
+}
+
+.submit-arrow-button {
+  background-color: #ffffff; 
+  border: none;
+  color: black;
+  padding: 10px 15px;
+  border-radius: 50%; /* Make it circular */
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 0.1s, transform 0.1s;
+  margin: 0;
+  margin-left: 10px; /* Space between input and button */
+}
+
+.submit-arrow-button:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6); 
+  transform: scale(1.1); /* Slightly enlarge on hover */
+}
+
+.submit-arrow-button:active {
+  transform: scale(0.70); /* Shrink slightly on click */
+}
+
+.submit-arrow-icon {
+  font-size: 16px; /* Adjust size as needed */
+  /* transform: rotate(90deg); Rotate to resemble an arrow */
+}

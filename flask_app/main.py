@@ -15,7 +15,8 @@ def home():
     url = None
 
     if request.method == 'POST':
-        url = request.form['url']
+        if not url:
+            url = request.form['url']
         reviews = Review(url)
         reviews.fetch_reviews()
 
@@ -96,20 +97,6 @@ def get_response(reviews, question):
         n_gpu_layers=30
     )
 
-
-    # sentiment = llm.create_chat_completion(
-    #     messages = [
-    #         {"role": "system", "content": "You are an assistant who perfectly classifies the sentiment of the question between postive and negative. The answer should be only one word: either positive or negative."},
-    #         {
-    #             "role": "user",
-    #             "content": f"What is the sentiment of the following question: '{question}'"
-    #         }
-    #     ]
-    # )
-
-    # question_class = sentiment["choices"][0]["message"]["content"]
-    # question_class = question_class.strip().lower()
-
     ratings = np.array(reviews.rating)
     if sentiment_map[question_class]: 
         indices = np.where(ratings > 4.0)[0]
@@ -120,8 +107,6 @@ def get_response(reviews, question):
     text = reviews.text
 
     text = [t for i, t in enumerate(text) if i in indices]
-    # TODO: Make review fetch adaptive to windows size and question asked
-    # text = text[:7]
     if os.path.exists(f"summary_reviews_{question_class}.pkl"):
         summary = load_pickle(f"summary_reviews_{question_class}.pkl")
     else:
@@ -143,4 +128,4 @@ def get_response(reviews, question):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True)
