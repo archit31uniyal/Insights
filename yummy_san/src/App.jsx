@@ -1,15 +1,33 @@
 import { useState } from 'react';
 import './App.css';
+import axios from 'axios';
+import config from "./config";
 
 function App() {
   const [url, setURL] = useState('');
   const [question, setQuestion] = useState('');
   const [urlSubmitted, setURLSubmitted] = useState(false);
+  const [reviews, setReviews] = useState({})
+  const [answer, setAnswer] = useState()
 
   const handleURLSubmit = (e) => {
     e.preventDefault(); // Prevent form from refreshing the page
+    
     if (url.trim()) {
       setURLSubmitted(true); // Hide URL box and show Question box
+      axios({
+        method: "POST",
+        url: `${config.API_BASE_URL}/url`,
+        data: { "url": url }
+      })
+      .then(response => {
+          const data = response.data;
+          setReviews(data);
+          console.log(data);
+        })
+        .catch(error => {
+          console.error(error);
+        });
     } else {
       alert('Please enter a valid URL.');
     }
@@ -19,6 +37,23 @@ function App() {
     e.preventDefault(); // Prevent form from refreshing the page
     if (question.trim()) {
       alert(`Your question: "${question}" has been submitted!`);
+      console.log(reviews);
+      axios({
+        method: "POST",
+        url: `${config.API_BASE_URL}/response`,
+        data: { 
+                "reviews": reviews,
+                "question": question 
+              }
+      })
+      .then(response => {
+          const answer = response.data;
+          setAnswer(answer);
+          console.log(answer);
+        })
+        .catch(error => {
+          console.error(error);
+        });
       setQuestion('');
     } else {
       alert('Please enter a question.');

@@ -4,39 +4,53 @@ import numpy as np
 from utils import *
 from transformers import AutoModelForSequenceClassification, pipeline
 import os
+import json
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app, origins="*")
 history = []
 
-@app.route("/", methods=['GET', 'POST'])
-def home():
-    answer = ""
-    submitted_text = None
-    url = None
+@app.route("/url", methods=['POST'])
+def fetch_reviews():
+    payload = request.get_json()
+    url = payload.get("url")
+    reviews = Review(url)
+    reviews.fetch_reviews()
+    return {
+        "rating": reviews.rating,
+        "text": reviews.text
+    }
 
-    if request.method == 'POST':
-        if not url:
-            url = request.form['url']
-        reviews = Review(url)
-        reviews.fetch_reviews()
+# @app.route("/", methods=['GET', 'POST'])
+# def home():
+#     answer = ""
+#     submitted_text = None
+#     url = None
 
-        submitted_text = request.form['textbox']
-        answer = get_response(reviews, submitted_text)
-        history.append((submitted_text, answer))
+#     if request.method == 'POST':
+#         if not url:
+#             url = request.form['url']
+#         reviews = Review(url)
+#         reviews.fetch_reviews()
 
-    return render_template("home.html", message=history)
+#         submitted_text = request.form['textbox']
+#         answer = get_response(reviews, submitted_text)
+#         history.append((submitted_text, answer))
 
-@app.route("/app", methods=['GET', 'POST'])
-def app_response():
-    answer = ""
-    submitted_text = request.args.get('text')
+#     return render_template("home.html", message=history)
+
+# @app.route("/app", methods=['GET', 'POST'])
+# def app_response():
+#     answer = ""
+#     submitted_text = request.args.get('text')
     
-    if request.method == 'POST' or request.method == 'GET':
-        answer = get_response(submitted_text)
-        history.append((submitted_text, answer))
+#     if request.method == 'POST' or request.method == 'GET':
+#         answer = get_response(submitted_text)
+#         history.append((submitted_text, answer))
 
-    # return render_template("home.html", message=history)
-    return answer
+#     # return render_template("home.html", message=history)
+#     return answer
 
 def summarize_in_batches(text, llm, q_len, batch_size= 20):
     curr_pos = 0
@@ -76,7 +90,11 @@ def summarize_in_batches(text, llm, q_len, batch_size= 20):
     
     return response["choices"][0]["message"]["content"]
 
-def get_response(reviews, question):
+@app.route("/response", methods=["POST"])
+def get_response():
+    payload = request.get_json()
+    reviews = payload.get("reviews")
+    question = payload.get("question")
     q_len = len(question.split())
     sentiment_map = {
     "positive": 1,
@@ -97,14 +115,14 @@ def get_response(reviews, question):
         n_gpu_layers=30
     )
 
-    ratings = np.array(reviews.rating)
+    ratings = np.array(reviews.get("rating"))
     if sentiment_map[question_class]: 
         indices = np.where(ratings > 4.0)[0]
     else:
         indices = np.where(ratings < 2.0)[0]
 
     # Insert your environment key 
-    text = reviews.text
+    text = reviews.get("text")
 
     text = [t for i, t in enumerate(text) if i in indices]
     if os.path.exists(f"summary_reviews_{question_class}.pkl"):
@@ -128,4 +146,4 @@ def get_response(reviews, question):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
