@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "npm-run-all -p start:backend start:frontend",
+    "start:backend": "cd ../flask_app && python main.py",
+    "start:frontend": "cd ../yummy_san && npm run dev"
   },
   "dependencies": {
     "axios": "^1.7.9",

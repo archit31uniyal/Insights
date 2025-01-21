@@ -6,6 +6,9 @@ from transformers import AutoModelForSequenceClassification, pipeline
 import os
 import json
 from flask_cors import CORS
+import time
+
+start_time = time.time()
 
 app = Flask(__name__)
 CORS(app, origins="*")
@@ -18,6 +21,7 @@ def fetch_reviews():
     reviews = Review(url)
     reviews.fetch_reviews()
     return {
+        "name": reviews.restaurant_name,
         "rating": reviews.rating,
         "text": reviews.text
     }
@@ -83,7 +87,7 @@ def summarize_in_batches(text, llm, q_len, batch_size= 20):
                 {"role": "system", "content": "You are an assistant who perfectly answers questions based on the reviews provided."},
                 {
                     "role": "user",
-                    "content": f"Here's a list of reviews:\n {summary}\n\n Summarize the reviews preserving important information in {512 - q_len} words."
+                    "content": f"Here's a list of reviews:\n {summary}\n\n Summarize the reviews preserving important information in {4096 - q_len} words."
                 }
             ]
         )
@@ -95,6 +99,8 @@ def get_response():
     payload = request.get_json()
     reviews = payload.get("reviews")
     question = payload.get("question")
+    name = reviews["name"]
+    print(name)
     q_len = len(question.split())
     sentiment_map = {
     "positive": 1,
@@ -117,32 +123,41 @@ def get_response():
 
     ratings = np.array(reviews.get("rating"))
     if sentiment_map[question_class]: 
-        indices = np.where(ratings > 4.0)[0]
+        indices = np.where(ratings > 3.0)[0]
     else:
-        indices = np.where(ratings < 2.0)[0]
+        indices = np.where(ratings < 3.0)[0]
 
     # Insert your environment key 
     text = reviews.get("text")
 
     text = [t for i, t in enumerate(text) if i in indices]
-    if os.path.exists(f"summary_reviews_{question_class}.pkl"):
-        summary = load_pickle(f"summary_reviews_{question_class}.pkl")
+    end_time = time.time()
+    time_passed = abs(end_time - start_time)
+    # if os.path.exists(f"summary_reviews_{question_class}.pkl"):
+    if time_passed < 86400 and os.path.exists(f"summary_{name}_reviews_{question_class}.pkl"):
+        summary = load_pickle(f"summary_{name}_reviews_{question_class}.pkl")
     else:
         summary = summarize_in_batches(text, llm, q_len)
-        save_pickle(summary, f"summary_reviews_{question_class}.pkl")
+        save_pickle(summary, f"summary_{name}_reviews_{question_class}.pkl")
 
     response = llm.create_chat_completion(
         messages = [
             {"role": "system", "content": "You are an assistant who perfectly answers questions based on the reviews provided."},
             {
                 "role": "user",
-                "content": f"Here's a summary of reviews:\n {summary} \n\n Based on the summary above, answer the following question, \n{question}"
+                "content": f"Here's a summary of reviews:\n {summary} \n\n Based on the summary above, answer the following question with correct grammer, \n{question}"
             }
         ]
     )
 
     processed = response["choices"][0]["message"]["content"]
     return processed
+
+@app.route("/new_chat", methods=["POST"])
+def new_chat():
+    data = request.get_json()
+    
+
 
 
 if __name__ == "__main__":

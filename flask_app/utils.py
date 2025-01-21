@@ -1,6 +1,7 @@
 import requests
 import re
 from bs4 import BeautifulSoup
+import os
 
 import pickle as pkl
 
@@ -11,12 +12,13 @@ class Review:
         self.date = date
         self.text = text
         self.num_pages = num_pages
+        self.restaurant_name = None
     
     def fetch_reviews(self):
         url2 = self.base_url
         start = 0
         end = 10* self.num_pages
-
+        
         while start < end:
             url = url2 + "?start=" + str(start)
             start +=10
@@ -24,6 +26,8 @@ class Review:
             if page.status_code == 200:
                 soup = BeautifulSoup(page.text, 'html.parser')
                 try:
+                    self.restaurant_name = soup.select('h1.y-css-olzveb')[0].text.strip()
+                    # print(self.restaurant_name)
                     reviews = soup.find(string='Recommended Reviews').find_parent('section')
                     reviews = reviews.select('div[aria-label$="star rating"]')
                     for review in reviews:

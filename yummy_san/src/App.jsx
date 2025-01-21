@@ -9,6 +9,8 @@ function App() {
   const [urlSubmitted, setURLSubmitted] = useState(false);
   const [reviews, setReviews] = useState({})
   const [answer, setAnswer] = useState()
+  const [chatHistory, setChatHistory] = useState([]);
+  const [urlList, setURLList] = useState([]);
 
   const handleURLSubmit = (e) => {
     e.preventDefault(); // Prevent form from refreshing the page
@@ -23,7 +25,7 @@ function App() {
       .then(response => {
           const data = response.data;
           setReviews(data);
-          console.log(data);
+          // console.log(data);
         })
         .catch(error => {
           console.error(error);
@@ -36,12 +38,12 @@ function App() {
   const handleQuestionSubmit = (e) => {
     e.preventDefault(); // Prevent form from refreshing the page
     if (question.trim()) {
-      alert(`Your question: "${question}" has been submitted!`);
-      console.log(reviews);
+      // alert(`Your question: "${question}" has been submitted!`);
+      // console.log(reviews);
       axios({
         method: "POST",
         url: `${config.API_BASE_URL}/response`,
-        data: { 
+        data: {
                 "reviews": reviews,
                 "question": question 
               }
@@ -49,7 +51,11 @@ function App() {
       .then(response => {
           const answer = response.data;
           setAnswer(answer);
-          console.log(answer);
+          setChatHistory((prevHistory) => [
+            ...prevHistory,
+            { question, answer },
+          ]);
+          // console.log(answer);
         })
         .catch(error => {
           console.error(error);
@@ -64,6 +70,8 @@ function App() {
     setURL(''); // Reset URL
     setQuestion(''); // Reset Question
     setURLSubmitted(false); // Show URL input again
+    setChatHistory([]); // Clear chat history
+    
   };
 
   return (
@@ -71,7 +79,26 @@ function App() {
       <header className='main-heading'>
         <img src="../img/logo_processed.jpeg" className="logo" alt="Logo" />
         <h1>Yummy San</h1>
+        <h2>Get to know your favorite restaurant!</h2>
       </header>
+
+      <div className="chat-history">
+        {chatHistory.map((chat, index) => (
+          <div className="chat-row" key={index}>
+            <div className="question">{chat.question}</div>
+            <div className="answer">
+              <img src="../img/logo_processed.jpeg" className="logo-answer" alt="Logo" /> 
+              <span className="answer-text">{chat.answer}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {!urlSubmitted && (
+        <p className='text-input'>
+          Enter the Yelp URL for the restaurant below
+        </p>
+      )}
 
       {!urlSubmitted && (
         <form className='text-box' onSubmit={handleURLSubmit}>
@@ -91,20 +118,26 @@ function App() {
       )}
 
       {urlSubmitted && (
-        <form className='text-box' onSubmit={handleQuestionSubmit}>
-          <div className="input-group">
-          <input
-            className='text-input'
-            type='text'
+        <form className="text-box" onSubmit={handleQuestionSubmit}>
+        <div className="input-group">
+          <textarea
+            className="text-input"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder='Question'
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault(); // Prevent the default Enter behavior (form submission)
+                handleQuestionSubmit(e); // Submit the form manually
+              }
+            }}
+            placeholder="Write your question here..."
+            rows="2" // Adjust the default height of the textarea
           />
-          <button className='submit-arrow-button' type='submit'>
-            <span className='submit-arrow-icon'>&#10140;</span>
+          <button className="submit-arrow-button" type="submit">
+            <span className="submit-arrow-icon">&#10140;</span>
           </button>
-          </div>
-        </form>
+        </div>
+      </form>
       )}
 
       <button className='new-chat-button' onClick={handleNewChat}>
@@ -115,3 +148,5 @@ function App() {
 }
 
 export default App;
+
+
