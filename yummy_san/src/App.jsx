@@ -71,7 +71,6 @@ function App() {
     setQuestion(''); // Reset Question
     setURLSubmitted(false); // Show URL input again
     setChatHistory([]); // Clear chat history
-    
   };
 
   return (
