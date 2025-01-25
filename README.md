@@ -23,7 +23,7 @@ $ conda activate yummy
 2. Install the required python packages using the following command:
 
 ```bash
-pip install -r flask_project/requirements.txt
+$ pip install -r flask_project/requirements.txt
 ```
 
 ### Running the project
